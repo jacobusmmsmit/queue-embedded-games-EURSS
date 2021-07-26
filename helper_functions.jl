@@ -3,12 +3,25 @@ using Roots
 using StatsBase
 using Plots
 
+function private_cost(p, λ1, α, μ)
+    1 / (μ(α) - λ1 + λ1 * p)
+end
+
+private_cost(p, q, λ1, λ2, α, μ, ν) = private_cost(p, λ1, α, μ)
+
+"""
+"""
+function public_cost(p, q, λ1, λ2, α, μ, ν)
+    (1 / (ν(α) - λ1 * p - λ2 * q))
+end
+
+
 """
     cost(p, q, λ1, λ2, α, μ, ν)
 Input parameters and return the cost
 """
 function cost(p, q, λ1, λ2, α, μ, ν)
-    (p / (ν(α) - λ1 * p - λ2 * q)) + ((1 - p) / (μ(α) - λ1 + λ1 * p))
+    p * public_cost(p, q, λ1, λ2, α, μ, ν) + (1-p) * private_cost(p, λ1, α, μ)
 end
 
 """
@@ -231,8 +244,8 @@ function equilibrium_probability(λ1, λ2, α, μ, ν; tolerance = 10e-9, first_
     while diff > tolerance
         response1 = second_pstar(root)
         response2 = first_pstar(response1)
+        push!(qs, response1)
         push!(ps, response2)
-        push!(qs, response2)
         diff = abs(response2 - root)
         root = response2
     end
