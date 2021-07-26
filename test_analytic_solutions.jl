@@ -5,14 +5,14 @@ using BenchmarkTools
 include("helper_functions.jl")
 
 begin
-    λ1 = 1
-    λ2 = 2
+    λ1 = 0.5
+    λ2 = 1
     α = 1
     μ(α) = 1 / (1.5 * (α))
     ν(α) = 1 / (0.7 * (α))
-    qs = 0:0.01:1
-    q = 0.5
     parameters = (λ1, λ2, α, μ, ν)
+    q = 0.5
+    qs = 0:0.001:1
 end
 
 # Test 1: Do the derivatives agree?
