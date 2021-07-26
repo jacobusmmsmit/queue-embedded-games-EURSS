@@ -95,7 +95,7 @@ player responding i.e. the argument λ1  may be λ2 in practice if player 2 is
 responding to player 1. Calculated numerically, less accurate than `analytic_pstar`
 """
 function pstar(q, λ1, λ2, α, μ, ν)
-    roots = find_valid_roots(p -> p - diff_cost(p, q, λ1, λ2, α, μ, ν))
+    roots = find_valid_roots(p -> diff_cost(p, q, λ1, λ2, α, μ, ν))
     if length(roots[1]) > 1
         root_values, root_is_minimum =
             classify_roots(p -> diff_cost(p, q, λ1, λ2, α, μ, ν), roots)
