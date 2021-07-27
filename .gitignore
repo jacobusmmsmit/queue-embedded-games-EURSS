@@ -17,3 +17,5 @@ deps/src/
 docs/build/
 docs/site/
 
+# Vscode settings
+.vscode
