@@ -12,8 +12,6 @@ end
 
 ps, qs = equilibrium_probability(parameters...; returnall=true)
 
-cost(plim, qlim, parameters...)
-
 plim, qlim = equilibrium_probability(parameters...; returnall=false)
 
 ps_plot = plot(ylabel = "Probability", xlabel = "", size = (600,250), legend = :topright,lw = 1.5)
@@ -24,4 +22,4 @@ qs_plot = plot(qs, label = "Opponent best response", size = (600,250), legend = 
 hline!([qlim], lc = :red, ls = :dash, label = "Optimal probability")
 
 plot(ps_plot, qs_plot, xlabel = "Number of Iterations", margin = 2mm)
-savefig("convergence_plot.pdf")
+# savefig("outputs/convergence_plot.pdf")
