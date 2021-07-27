@@ -1,3 +1,4 @@
+using Measures
 include("helper_functions.jl")
 
 begin
@@ -19,8 +20,8 @@ ps_plot = plot(ylabel = "Probability", xlabel = "", size = (600,250), legend = :
 plot!(ps_plot, ps, label = "Best response", lc = :blue)
 hline!([plim], lc = :red, ls = :dash, label = "Optimal probability")
 
-qs_plot = plot(qs, label = "Opponent best response", size = (600,250), legend = :bottomright, lc = :orange, lw = 1.5)
+qs_plot = plot(qs, label = "Opponent best response", size = (600,250), legend = :bottomright, lc = :orange, lw = 1.5, ylabel = "Probability")
 hline!([qlim], lc = :red, ls = :dash, label = "Optimal probability")
 
-plot(ps_plot, qs_plot)
+plot(ps_plot, qs_plot, xlabel = "Number of Iterations", margin = 2mm)
 savefig("convergence_plot.pdf")
