@@ -1,7 +1,6 @@
 using Plots
 using ForwardDiff
 using Roots
-using BenchmarkTools
 include("helper_functions.jl")
 
 begin
@@ -71,7 +70,7 @@ a_costs = cost.(a_ps, qs, parameters...)
 
 cost_plot = plot(qs, costs, label = "autodiff")
 plot!(qs, a_costs, label = "analytic")
-plot!(ylims = (-50,50))
+plot!(ylims = (-50, 50))
 plot_assumptions!(cost_plot, [ps, a_ps], qs, parameters..., height = 10)
 
 traffic_plot = plot(
@@ -80,7 +79,7 @@ traffic_plot = plot(
     ylabel = "Intensity of arrivals",
     legend = :topleft,
     xlims = (0, 1),
-    ylims = ylims=(0,Inf)
+    ylims = ylims = (0, Inf)
     )
 
 plot!(qs, λ1 .* a_ps .+ λ2 .* qs, label = "ν(α)")
@@ -105,7 +104,7 @@ traffic_plot_anim = @animate for α ∈ vcat(collect(0.5:0.005:2.1), collect(rev
     ylabel = "Intensity of arrivals",
     legend = :topleft,
     xlims = (0, 1),
-    ylims = ylims=(0,Inf),
+    ylims = ylims = (0, Inf),
     xticks = 0:0.2:1,
     )
 
@@ -114,7 +113,7 @@ traffic_plot_anim = @animate for α ∈ vcat(collect(0.5:0.005:2.1), collect(rev
 
     plot!(qs, λ1 .* (1 .- a_ps), label = "μ(α)")
     hline!([μ(α)], label = "μ(α) limit", ls = :dash, lw = 1.5)
-
+    
     does_intersect, intersection_index = findmax(λ1 .* a_ps .+ λ2 .* qs .> ν(α))
     x_intersection = qs[intersection_index]
     y_intersection_max = maximum([
@@ -150,9 +149,9 @@ traffic_plot_anim = @animate for α ∈ vcat(collect(0.5:0.005:2.1), collect(rev
             fa = 0.35,
             label = "BR Feasibile")
         plot!(
-            qs[intersection_index+1:end],
-            zeros(length(qs[intersection_index+1:end])),
-            fillrange = a_ps[intersection_index+1:end],
+            qs[intersection_index + 1:end],
+            zeros(length(qs[intersection_index + 1:end])),
+            fillrange = a_ps[intersection_index + 1:end],
             fc = :red,
             fa = 0.35,
             label = "BR Infeasibile")

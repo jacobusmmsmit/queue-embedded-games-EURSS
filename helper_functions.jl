@@ -117,6 +117,8 @@ function analytic_pstar(q, λ1, λ2, α, μ, ν)
     return clamp(p, 0, 1)
 end
 
+analytic_qstar(p, λ1, λ2, α, μ, ν) = analytic_pstar(p, λ2, λ1, α, μ, ν)
+
 # function analytic_pstar(q, λ1, λ2, α, μ, ν)
 #     p = (λ1*Complex(μ(α)*(ν(α) - λ2*q))^(1/2) - μ(α)*Complex(μ(α)*(ν(α) - λ2*q))^(1/2) - ν(α)*Complex(μ(α)*(ν(α) - λ2*q))^(1/2) - λ1*ν(α) + 2*μ(α)*ν(α) + λ2*q*Complex(μ(α)*(ν(α) - λ2*q))^(1/2) + λ1*λ2*q - 2*λ2*μ(α)*q)/(λ1*μ(α) - λ1*ν(α) + λ1*λ2*q)
 #     if isreal(p) && (0 < Real(p) < 1)
@@ -201,7 +203,8 @@ function diff_best_responded_cost(p, λ1, λ2, α, μ, ν)
 end
 
 """
-    equilibrium_probability(λ1, λ2, α, μ, ν; tolerance = 10e-9, first_actor = 1, returnall = false)
+    old_equilibrium_probability(λ1, λ2, α, μ, ν; tolerance = 10e-9, first_actor = 1, returnall = false)
+Superceded by the current `equilibrium_probability` function which is much faster.
 Returns the equilibrium probabilities (i.e. Nash equilibrium) for a given input.
 This is calculated by finding an initial minimiser of the cost function and
 recursively allowing players to best respond to the other player's actions,
@@ -212,7 +215,7 @@ It has optional kwargs:
 give different results)
 * returnall - defaults to false. If true return the full recursive sequence
 """
-function equilibrium_probability(λ1, λ2, α, μ, ν; tolerance = 10e-9, first_actor = 1, returnall = false)
+function old_equilibrium_probability(λ1, λ2, α, μ, ν; tolerance = 10e-13, first_actor = 1, returnall = false)
     if first_actor == 1
         parameters = (λ1, λ2, α, μ, ν)
         swapped_parameters = (λ2, λ1, α, μ, ν)
@@ -254,6 +257,19 @@ function equilibrium_probability(λ1, λ2, α, μ, ν; tolerance = 10e-9, first_
     else
         return root, response1
     end
+end
+
+"""
+    equilibrium_probability(λ1, λ2, α, μ, ν)
+Returns the equilibrium probabilities given parameters by solving the recurrence
+relation p*(q*(p_n)) = p_{n+1}
+"""
+function equilibrium_probability(λ1, λ2, α, μ, ν)
+    rec_rel(p) = analytic_pstar(analytic_qstar(p, λ1, λ2, α, μ, ν), λ1, λ2, α, μ, ν)
+    p, _ = find_valid_roots(p -> rec_rel(p) - p)
+    p = first(p)
+    q = analytic_qstar(p, λ1, λ2, α, μ, ν)
+    return (p, q)
 end
 
 function shaded_regions(mask::BitVector, iterator)
