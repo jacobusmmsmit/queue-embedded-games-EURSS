@@ -3,7 +3,7 @@ include("helper_functions.jl")
 
 begin
     λ1 = 1
-    λ2 = 1
+    λ2 = 1.5
     α = 1
     μ(α) = 1 / (1.5 * (α))
     ν(α) = 1 / (0.7 * (α))
@@ -21,49 +21,102 @@ p1_mask = p1_cost .>= 0
 begin
     cost_plot = plot(qs[p1_mask], p1_cost[p1_mask], label = "Player 1 cost")
     plot!(qs[p2_mask], p2_cost[p2_mask], label = "Player 2 cost")
-    vline!([p], label = "Equilibrium probability", lc = :red, ls = :dash)
+    vline!([q], label = "Equilibrium probability", lc = :red, ls = :dash)
     xlabel!("Opponent's probability")
     ylabel!("Cost")
-    plot!(size = (600, 250), ylims = (0, 25), xlims = (0.2,1), margin = 2.5mm)
+    plot!(size = (600, 250), ylims = (0, 25), xlims = (0.2, 1), margin = 2.5mm)
+    plot!(legend = :bottomright)
 end
+savefig("outputs/costs_vary_q_15.pdf")
+
+begin
+    total_cost_var = p1_cost + p2_cost
+    tc_plot = plot(cost_plot, qs, total_cost_var, label = "Total cost")
+    plot!(xlims = (0.57, 0.65), ylims = (0, 50))
+    mincost, pos = findmin(total_cost_var[0.56 .< qs .< 0.7])
+    vline!([qs[0.56 .< qs .< 0.7][pos]], label = "Social optimum probability", ls = :dash, lc = :black)
+    plot!(size = (600, 400), legend = :topright)
+end
+savefig("outputs/soc_opt_15.pdf")
+# function total_cost(p, q, λ1, λ2, α, μ, ν)
+#     p1_cost = cost(p, q, λ1, λ2, α, μ, ν)
+#     p2_cost = cost(q, p, λ2, λ1, α, μ, ν)
+    
+#     return (p1_cost, p2_cost, (p1_cost > 0 ? p1_cost : 100000) + (p2_cost > 0 ? p2_cost : 100000))
+# end
 
 
 
-# savefig("outputs/costs_vary_q.pdf")
-q
-perturbed_q = 0.6
-current_cost = cost(p, q, parameters...)
-p1_newcost = cost(analytic_pstar(perturbed_q, parameters...), perturbed_q, parameters...)
-analytic_best_responded_cost(q, parameters...)
-p2_newcost = cost(perturbed_q, analytic_pstar(perturbed_q, parameters...), opponent_parameters...)
+# begin
+#     qn = q - 0.004
+#     pn = pstar(qn, parameters...)
+#     total_cost(p, q, parameters...) .- total_cost(pn, qn, parameters...)
+#     # println("q: ", q)
+#     # println("qn: ", qn)
+#     # println("p: ", p)
+#     # println("pn: ", pn)
+# end
 
-r2perturb = analytic_pstar(perturbed_q, parameters...)
-r3p = analytic_pstar(r2perturb, opponent_parameters...)
-r4p = analytic_pstar(r3p, parameters...)
+total_cost(p, q, parameters...)
+total_cost(p, 0.5, parameters...)
+total_cost(pn, qn, parameters...)
 
-ps = analytic_pstar.(qs, parameters...)
-
-p1_plot = plot(qs, ps, label = "p*", lims = (0, 1))
-vline!(p1_plot, [perturbed_q], ls = :dash)
-vline!(p1_plot, [r2perturb], ls = :dash)
-vline!(p1_plot, [r3p], ls = :dash)
-vline!(p1_plot, [r4p], ls = :dash)
-
-p1_plot = plot(qs, analytic_pstar.(qs, opponent_parameters...), label = "q*", lims = (0, 1))
-vline!([q], label = "Pareto probability", lc = :red, ls = :dash)
-xlabel!("Opponent's probability")
-ylabel!("Cost")
-
-p1_queue_length = (1 .- ps) .* λ1 .* private_cost.(ps, qs, parameters...)
-p2_queue_length = (1 .- qs) .* λ2 .* private_cost.(qs, ps, opponent_parameters...)
-public_queue_length = ((λ1 .* ps) + (λ2 .* qs)) .* public_cost.(ps, qs, parameters...)
-
-plot(qs, p1_queue_length, label = "Player 1 queue length")
-plot!(qs[p2_queue_length .> 0], p2_queue_length[p2_queue_length .> 0], label = "Player 2 queue length")
-plot!(qs, public_queue_length, label = "Public queue length")
-ylims!(0,30)
+res = total_cost.(qs, pstar.(qs, parameters...), parameters...)
+p1_c = getindex.(res, 1)
+p2_c = getindex.(res, 2)
+tcs = getindex.(res, 3)
+plot(qs, p1_c)
+plot!(qs, p2_c)
+plot!(qs, tcs)
+plot!(ylims = (-50, 50))
+vline!([pn])
+vline!([q])
 
 
-q
-analytic_pstar(q, parameters...)
+plot(
+    0:0.005:1,
+0:0.005:1,
+(p, q) -> total_cost(p, q, parameters...),
+    st = :surface,
+    zlims = (-50, 50),
+    camera = (90, 90))
+scatter!([p], [q], [total_cost(p, q, parameters...)], legend = nothing)
+
+2
+# q
+# perturbed_q = 0.6
+# current_cost = cost(p, q, parameters...)
+# p1_newcost = cost(analytic_pstar(perturbed_q, parameters...), perturbed_q, parameters...)
+# analytic_best_responded_cost(q, parameters...)
+# p2_newcost = cost(perturbed_q, analytic_pstar(perturbed_q, parameters...), opponent_parameters...)
+
+# r2perturb = analytic_pstar(perturbed_q, parameters...)
+# r3p = analytic_pstar(r2perturb, opponent_parameters...)
+# r4p = analytic_pstar(r3p, parameters...)
+
+# ps = analytic_pstar.(qs, parameters...)
+
+# p1_plot = plot(qs, ps, label = "p*", lims = (0, 1))
+# vline!(p1_plot, [perturbed_q], ls = :dash)
+# vline!(p1_plot, [r2perturb], ls = :dash)
+# vline!(p1_plot, [r3p], ls = :dash)
+# vline!(p1_plot, [r4p], ls = :dash)
+
+# p1_plot = plot(qs, analytic_pstar.(qs, opponent_parameters...), label = "q*", lims = (0, 1))
+# vline!([q], label = "Pareto probability", lc = :red, ls = :dash)
+# xlabel!("Opponent's probability")
+# ylabel!("Cost")
+
+# p1_queue_length = (1 .- ps) .* λ1 .* private_cost.(ps, qs, parameters...)
+# p2_queue_length = (1 .- qs) .* λ2 .* private_cost.(qs, ps, opponent_parameters...)
+# public_queue_length = ((λ1 .* ps) + (λ2 .* qs)) .* public_cost.(ps, qs, parameters...)
+
+# plot(qs, p1_queue_length, label = "Player 1 queue length")
+# plot!(qs[p2_queue_length .> 0], p2_queue_length[p2_queue_length .> 0], label = "Player 2 queue length")
+# plot!(qs, public_queue_length, label = "Public queue length")
+# ylims!(0,30)
+
+
+# q
+# analytic_pstar(q, parameters...)
 
