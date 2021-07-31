@@ -12,14 +12,14 @@ begin
     parameters = (λ1, λ2, α, μ, ν)
 end
 
-# function analytic_pstar(q, λ1, λ2, α, μ, ν)
+# function pstar(q, λ1, λ2, α, μ, ν)
 #     p = (λ1*Complex(μ(α)*(ν(α) - λ2*q))^(1/2) - μ(α)*Complex(μ(α)*(ν(α) - λ2*q))^(1/2) - ν(α)*Complex(μ(α)*(ν(α) - λ2*q))^(1/2) - λ1*ν(α) + 2*μ(α)*ν(α) + λ2*q*Complex(μ(α)*(ν(α) - λ2*q))^(1/2) + λ1*λ2*q - 2*λ2*μ(α)*q)/(λ1*μ(α) - λ1*ν(α) + λ1*λ2*q) |> real
 #     return clamp(p, 0, 1)
 # end
 
 
 # function best_responded_cost(p, λ1, λ2, α, μ, ν)
-#     cost(p, analytic_pstar(p, λ2, λ1, α, μ, ν), parameters...)
+#     cost(p, pstar(p, λ2, λ1, α, μ, ν), parameters...)
 # end
 
 # function ∂best_responded_cost_∂p(p, λ1, λ2, α, μ, ν)
@@ -89,8 +89,8 @@ end
 #     else
 #         root = first(root[ismin])
 #     end
-#     first_pstar(p) = analytic_pstar(p, parameters...)
-#     second_pstar(p) = analytic_pstar(p, swapped_parameters...)
+#     first_pstar(p) = pstar(p, parameters...)
+#     second_pstar(p) = pstar(p, swapped_parameters...)
 
 #     diff = 100
 #     response1 = 0

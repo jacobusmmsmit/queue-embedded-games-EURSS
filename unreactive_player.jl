@@ -13,8 +13,8 @@ begin
 end
 
 
-ps = pstar.(qs, parameters...)
-a_ps = analytic_pstar.(qs, parameters...)
+ps = numerical_pstar.(qs, parameters...)
+a_ps = pstar.(qs, parameters...)
 costs = cost.(ps, qs, parameters...)
 a_costs = cost.(a_ps, qs, parameters...)
 

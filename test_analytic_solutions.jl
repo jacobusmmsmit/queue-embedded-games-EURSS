@@ -38,7 +38,7 @@ sol, _ = first.(find_valid_roots(p -> ∂cost_∂p(p, q, parameters...)))
 #     p = (λ1*Complex(μ(α)*(ν(α) - λ2*q))^(1/2) - μ(α)*Complex(μ(α)*(ν(α) - λ2*q))^(1/2) - ν(α)*Complex(μ(α)*(ν(α) - λ2*q))^(1/2) - λ1*ν(α) + 2*μ(α)*ν(α) + λ2*q*Complex(μ(α)*(ν(α) - λ2*q))^(1/2) + λ1*λ2*q - 2*λ2*μ(α)*q)/(λ1*μ(α) - λ1*ν(α) + λ1*λ2*q) |> real
 #     return clamp(p, 0, 1)
 # end
-asol = analytic_pstar(q, parameters...)
+asol = pstar(q, parameters...)
 
 diff_cost(sol, q, parameters...)
 diff_cost(asol, q, parameters...)
@@ -57,8 +57,8 @@ diff_cost(asol, q, parameters...)
 
 
 qs = 0:0.0001:1
-ps = pstar.(qs, parameters...)
-a_ps = analytic_pstar.(qs, parameters...)
+ps = numerical_pstar.(qs, parameters...)
+a_ps = pstar.(qs, parameters...)
 
 response_plot = plot(qs, ps, label = "autodiff")
 plot!(qs, a_ps, label = "analytic")
