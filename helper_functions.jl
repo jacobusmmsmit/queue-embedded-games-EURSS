@@ -24,6 +24,8 @@ function cost(p, q, λ1, λ2, α, μ, ν)
     p * public_cost(p, q, λ1, λ2, α, μ, ν) + (1-p) * private_cost(p, λ1, α, μ)
 end
 
+total_cost(p, q, λ1, λ2, α, μ, ν) = cost(p, q, λ1, λ2, α, μ, ν) + cost(q, p, λ2, λ1, α, μ, ν)
+
 """
     ∂cost_∂p(p, q, λ1, λ2, α, μ, ν)
 Input parameters and return the derivative of the cost with respect to p at the
@@ -89,12 +91,12 @@ end
 
 
 """
-    function pstar(q, λ1, λ2, α, μ, ν)
+    function numerical_pstar(q, λ1, λ2, α, μ, ν)
 Returns the best response to an opponents move from the perspective of the
 player responding i.e. the argument λ1  may be λ2 in practice if player 2 is
-responding to player 1. Calculated numerically, less accurate than `analytic_pstar`
+responding to player 1. Calculated numerically, less accurate than `pstar`
 """
-function pstar(q, λ1, λ2, α, μ, ν)
+function numerical_pstar(q, λ1, λ2, α, μ, ν)
     roots = find_valid_roots(p -> diff_cost(p, q, λ1, λ2, α, μ, ν))
     if length(roots[1]) > 1
         root_values, root_is_minimum =
@@ -107,19 +109,19 @@ end
 
 
 """
-    analytic_pstar(q, λ1, λ2, α, μ, ν)
+    pstar(q, λ1, λ2, α, μ, ν)
 Returns the best response to an opponents move from the perspective of the
 player responding i.e. the argument λ1  may be λ2 in practice if player 2 is
-responding to player 1. Calculated analytically, more accurate than `pstar`
+responding to player 1. Calculated analytically, more accurate than `numerical_pstar`
 """
-function analytic_pstar(q, λ1, λ2, α, μ, ν)
+function pstar(q, λ1, λ2, α, μ, ν)
     p = (λ1*Complex(μ(α)*(ν(α) - λ2*q))^(1/2) - μ(α)*Complex(μ(α)*(ν(α) - λ2*q))^(1/2) - ν(α)*Complex(μ(α)*(ν(α) - λ2*q))^(1/2) - λ1*ν(α) + 2*μ(α)*ν(α) + λ2*q*Complex(μ(α)*(ν(α) - λ2*q))^(1/2) + λ1*λ2*q - 2*λ2*μ(α)*q)/(λ1*μ(α) - λ1*ν(α) + λ1*λ2*q) |> real
     return clamp(p, 0, 1)
 end
 
-analytic_qstar(p, λ1, λ2, α, μ, ν) = analytic_pstar(p, λ2, λ1, α, μ, ν)
+qstar(p, λ1, λ2, α, μ, ν) = pstar(p, λ2, λ1, α, μ, ν)
 
-# function analytic_pstar(q, λ1, λ2, α, μ, ν)
+# function pstar(q, λ1, λ2, α, μ, ν)
 #     p = (λ1*Complex(μ(α)*(ν(α) - λ2*q))^(1/2) - μ(α)*Complex(μ(α)*(ν(α) - λ2*q))^(1/2) - ν(α)*Complex(μ(α)*(ν(α) - λ2*q))^(1/2) - λ1*ν(α) + 2*μ(α)*ν(α) + λ2*q*Complex(μ(α)*(ν(α) - λ2*q))^(1/2) + λ1*λ2*q - 2*λ2*μ(α)*q)/(λ1*μ(α) - λ1*ν(α) + λ1*λ2*q)
 #     if isreal(p) && (0 < Real(p) < 1)
 #         return Real(p)
@@ -138,7 +140,7 @@ to this p. Calculated analytically, but less performant than
 `analytic_best_responded_cost`.
 """
 function best_responded_cost(p, λ1, λ2, α, μ, ν)
-    cost(p, analytic_pstar(p, λ2, λ1, α, μ, ν), parameters...)
+    cost(p, pstar(p, λ2, λ1, α, μ, ν), parameters...)
 end
 
 """
@@ -233,8 +235,8 @@ function old_equilibrium_probability(λ1, λ2, α, μ, ν; tolerance = 10e-13, f
     else
         root = first(root[ismin])
     end
-    first_pstar(p) = analytic_pstar(p, parameters...)
-    second_pstar(p) = analytic_pstar(p, swapped_parameters...)
+    first_pstar(p) = pstar(p, parameters...)
+    second_pstar(p) = pstar(p, swapped_parameters...)
 
     diff = 100
     response1 = 0
@@ -265,10 +267,10 @@ Returns the equilibrium probabilities given parameters by solving the recurrence
 relation p*(q*(p_n)) = p_{n+1}
 """
 function equilibrium_probability(λ1, λ2, α, μ, ν)
-    rec_rel(p) = analytic_pstar(analytic_qstar(p, λ1, λ2, α, μ, ν), λ1, λ2, α, μ, ν)
+    rec_rel(p) = pstar(qstar(p, λ1, λ2, α, μ, ν), λ1, λ2, α, μ, ν)
     p, _ = find_valid_roots(p -> rec_rel(p) - p)
     p = first(p)
-    q = analytic_qstar(p, λ1, λ2, α, μ, ν)
+    q = qstar(p, λ1, λ2, α, μ, ν)
     return (p, q)
 end
 
