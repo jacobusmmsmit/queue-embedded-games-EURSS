@@ -13,31 +13,38 @@ begin
     qs = 0:0.001:1
 end
 
-p1_cost = cost.(analytic_pstar.(qs, parameters...), qs, parameters...)
-p2_cost = cost.(qs, analytic_pstar.(qs, parameters...), opponent_parameters...)
+p1_cost = cost.(pstar.(qs, parameters...), qs, parameters...)
+p2_cost = cost.(qs, pstar.(qs, parameters...), opponent_parameters...)
 p2_mask = p2_cost .>= 0
 p1_mask = p1_cost .>= 0
 
 begin
     cost_plot = plot(qs[p1_mask], p1_cost[p1_mask], label = "Player 1 cost")
     plot!(qs[p2_mask], p2_cost[p2_mask], label = "Player 2 cost")
-    vline!([q], label = "Equilibrium probability", lc = :red, ls = :dash)
-    xlabel!("Opponent's probability")
+    vline!([q], label = "Equilibrium", lc = :red, ls = :dash)
+    xlabel!("Player 2 probability")
     ylabel!("Cost")
-    plot!(size = (600, 250), ylims = (0, 25), xlims = (0.2, 1), margin = 2.5mm)
+    plot!(size = (600, 250), ylims = (5, 20), xlims = (0.57, 0.68), margin = 2.5mm)
     plot!(legend = :bottomright)
 end
 savefig("outputs/costs_vary_q_15.pdf")
 
 begin
     total_cost_var = p1_cost + p2_cost
+    p1gp2 = sign.(p1_cost[p1_mask] - p2_cost[p1_mask])
     tc_plot = plot(cost_plot, qs, total_cost_var, label = "Total cost")
-    plot!(xlims = (0.57, 0.65), ylims = (0, 50))
+    plot!(xlims = (0.57, 0.65), ylims = (0, 40))
     mincost, pos = findmin(total_cost_var[0.56 .< qs .< 0.7])
-    vline!([qs[0.56 .< qs .< 0.7][pos]], label = "Social optimum probability", ls = :dash, lc = :black)
+    vline!([qs[0.56 .< qs .< 0.7][pos]], label = "Lower total cost", ls = :dash, lc = :black)
+    vline!([qs[p1_mask][p1gp2 .!= circshift(p1gp2, 1)]], label = "Minmax cost", ls = :dash)
     plot!(size = (600, 400), legend = :topright)
 end
 savefig("outputs/soc_opt_15.pdf")
+
+
+
+calculate_assumptions(0.5, 0.5, parameters...)
+
 # function total_cost(p, q, λ1, λ2, α, μ, ν)
 #     p1_cost = cost(p, q, λ1, λ2, α, μ, ν)
 #     p2_cost = cost(q, p, λ2, λ1, α, μ, ν)
@@ -86,15 +93,15 @@ scatter!([p], [q], [total_cost(p, q, parameters...)], legend = nothing)
 # q
 # perturbed_q = 0.6
 # current_cost = cost(p, q, parameters...)
-# p1_newcost = cost(analytic_pstar(perturbed_q, parameters...), perturbed_q, parameters...)
+# p1_newcost = cost(pstar(perturbed_q, parameters...), perturbed_q, parameters...)
 # analytic_best_responded_cost(q, parameters...)
-# p2_newcost = cost(perturbed_q, analytic_pstar(perturbed_q, parameters...), opponent_parameters...)
+# p2_newcost = cost(perturbed_q, pstar(perturbed_q, parameters...), opponent_parameters...)
 
-# r2perturb = analytic_pstar(perturbed_q, parameters...)
-# r3p = analytic_pstar(r2perturb, opponent_parameters...)
-# r4p = analytic_pstar(r3p, parameters...)
+# r2perturb = pstar(perturbed_q, parameters...)
+# r3p = pstar(r2perturb, opponent_parameters...)
+# r4p = pstar(r3p, parameters...)
 
-# ps = analytic_pstar.(qs, parameters...)
+# ps = pstar.(qs, parameters...)
 
 # p1_plot = plot(qs, ps, label = "p*", lims = (0, 1))
 # vline!(p1_plot, [perturbed_q], ls = :dash)
@@ -102,7 +109,7 @@ scatter!([p], [q], [total_cost(p, q, parameters...)], legend = nothing)
 # vline!(p1_plot, [r3p], ls = :dash)
 # vline!(p1_plot, [r4p], ls = :dash)
 
-# p1_plot = plot(qs, analytic_pstar.(qs, opponent_parameters...), label = "q*", lims = (0, 1))
+# p1_plot = plot(qs, pstar.(qs, opponent_parameters...), label = "q*", lims = (0, 1))
 # vline!([q], label = "Pareto probability", lc = :red, ls = :dash)
 # xlabel!("Opponent's probability")
 # ylabel!("Cost")
@@ -118,5 +125,5 @@ scatter!([p], [q], [total_cost(p, q, parameters...)], legend = nothing)
 
 
 # q
-# analytic_pstar(q, parameters...)
+# pstar(q, parameters...)
 
