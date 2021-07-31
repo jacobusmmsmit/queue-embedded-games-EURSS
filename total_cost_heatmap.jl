@@ -22,7 +22,6 @@ heatcost = plot(xs, ys, threeD_cost, st = :heatmap, clims = (0, 150))
 plot!(xlims = (0.3, 0.6), ylims = (0.5, 0.75))
 plot!([p], [q], st = :scatter, shape = :circle, msc = :black, label = "Equilibrium")
 plot!(xlabel = "Player 1 probability", ylabel = "Player 2 probability")
-title!("Sum of Costs for Different Probability Combinations")
 
 begin
     gtape = ReverseDiff.GradientTape(vec -> threeD_cost(vec...), [p, q]) 
@@ -58,4 +57,5 @@ begin
     q_p2br = qstar(p_p2br, parameters...)
     plot!(heatcost, [p_p2br], [q_p2br], st = :scatter, label = "Min where P2 best responds")
 end
-
+plot!(colorbar_title = "Total Cost")
+savefig("outputs/total_cost_heatmap.pdf")
