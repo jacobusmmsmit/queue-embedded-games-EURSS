@@ -140,7 +140,7 @@ to this p. Calculated analytically, but less performant than
 `analytic_best_responded_cost`.
 """
 function best_responded_cost(p, λ1, λ2, α, μ, ν)
-    cost(p, pstar(p, λ2, λ1, α, μ, ν), parameters...)
+    cost(p, pstar(p, λ2, λ1, α, μ, ν), λ1, λ2, α, μ, ν)
 end
 
 """
@@ -356,4 +356,35 @@ end
 
 function dp_string(number::Real, n::Integer)
     rpad(string(round(number, sigdigits = n)), n+1, "0")[1:n+1]
+end
+
+## Homo-Egualis-related functions ##
+he_term(p, q, λ1, λ2, α, μ, ν, β) = β/2 * (cost(q, p, λ2, λ1, α, μ, ν) - cost(p, q, λ1, λ2, α, μ, ν))
+he_cost(p, q, λ1, λ2, α, μ, ν, β) = cost(p, q, λ1, λ2, α, μ, ν) + he_term(p, q, λ1, λ2, α, μ, ν, β)
+
+function he_pstar(q, λ1, λ2, α, μ, ν, β)
+    mu = μ(α)
+    nu = ν(α)
+    A = (
+            (mu + nu - λ1 - λ2*q)*real(Complex(-mu*(β - 2)*(2*nu - β*nu - 2*λ2*q + β*λ1*q + β*λ2*q))^(1/2)) +
+            2*(
+                λ1*nu +
+                -2*mu*nu +
+                -λ1*λ2*q +
+                2*λ2*mu*q
+            ) +
+            β*(-λ1*nu + 2*mu*nu + λ1^2*q + λ1*λ2*q -λ1*mu*q - 2*λ2*mu*q)
+        )
+    B = λ1*((β-2)*(mu - nu) + q*(β*(λ1 + λ2) - 2*λ2))
+    return clamp(A/B, 0, 1)
+end
+
+he_qstar(p, λ1, λ2, α, μ, ν, β) = he_pstar(p, λ2, λ1, α, μ, ν, β)
+
+function he_equilibrium_probability(λ1, λ2, α, μ, ν, β)
+    rec_rel(p) = he_pstar(he_qstar(p, λ1, λ2, α, μ, ν, β), λ1, λ2, α, μ, ν, β)
+    p, _ = find_valid_roots(p -> rec_rel(p) - p)
+    p = first(p)
+    q = he_qstar(p, λ1, λ2, α, μ, ν, β)
+    return (p, q)
 end
