@@ -18,9 +18,10 @@ end
 
 
 threeD_cost = (p, q) -> total_cost(p, q, parameters...)
-heatcost = plot(xs, ys, threeD_cost, st = :heatmap, clims = (0, 150))
-plot!(xlims = (0.3, 0.6), ylims = (0.5, 0.75))
-plot!([p], [q], st = :scatter, shape = :circle, msc = :black, label = "Equilibrium")
+heatcost = plot(xs, ys, threeD_cost, st = :contourf)
+plot!(xlims = (0.4, 0.45), ylims = (0.58, 0.62), clims = (20, 27))
+scattersize = 5
+plot!([p], [q], st = :scatter, shape = :circle, msc = :black, ms = scattersize, label = "Equilibrium")
 plot!(xlabel = "Player 1 probability", ylabel = "Player 2 probability")
 
 begin
@@ -40,14 +41,14 @@ while difference > 1e-6
     difference = maximum([abs(p1 - p0), abs(q1 - q0)])
 end
 
-plot!(heatcost, [p1], [q1], st = :scatter, label = "Minimum Total Cost")
+plot!(heatcost, [p1], [q1], st = :scatter, ms = scattersize, label = "Minimum Total Cost")
 
 begin
     possibleroots = first(find_valid_roots(q -> ForwardDiff.derivative(ψ -> total_cost(pstar(ψ, parameters...), ψ, parameters...), q)))
     roots = possibleroots[ForwardDiff.derivative.(q -> ForwardDiff.derivative(ψ -> total_cost(pstar(ψ, parameters...), ψ, parameters...), q), possibleroots) .> 0]
     q_p1br = roots[findmin(abs.(roots .- q))[2]]
     p_p1br = pstar(q_p1br, parameters...)
-    plot!(heatcost, [p_p1br], [q_p1br], st = :scatter, label = "Min where P1 best responds")
+    plot!(heatcost, [p_p1br], [q_p1br], st = :scatter, ms = scattersize, label = "Min where P1 best responds")
 end
 
 begin
@@ -55,7 +56,8 @@ begin
     roots = possibleroots[ForwardDiff.derivative.(p -> ForwardDiff.derivative(ψ -> total_cost(ψ, qstar(ψ, parameters...), parameters...), p), possibleroots) .> 0]
     p_p2br = roots[findmin(abs.(roots .- p))[2]]
     q_p2br = qstar(p_p2br, parameters...)
-    plot!(heatcost, [p_p2br], [q_p2br], st = :scatter, label = "Min where P2 best responds")
+    plot!(heatcost, [p_p2br], [q_p2br], st = :scatter, ms = scattersize, label = "Min where P2 best responds")
 end
 plot!(colorbar_title = "Total Cost")
-savefig("outputs/total_cost_heatmap.pdf")
+plot!(size = (500, 300))
+savefig("outputs/total_cost_contour.pdf")

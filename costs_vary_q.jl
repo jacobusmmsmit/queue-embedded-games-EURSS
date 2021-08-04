@@ -27,7 +27,7 @@ begin
     plot!(size = (600, 250), ylims = (5, 20), xlims = (0.57, 0.68), margin = 2.5mm)
     plot!(legend = :bottomright)
 end
-savefig("outputs/costs_vary_q_15.pdf")
+# savefig("outputs/costs_vary_q_15.pdf")
 
 begin
     total_cost_var = p1_cost + p2_cost
@@ -37,7 +37,7 @@ begin
     mincost, pos = findmin(total_cost_var[0.56 .< qs .< 0.7])
     vline!([qs[0.56 .< qs .< 0.7][pos]], label = "Lower total cost", ls = :dash, lc = :black)
     vline!([qs[p1_mask][p1gp2 .!= circshift(p1gp2, 1)]], label = "Minmax cost", ls = :dash)
-    plot!(size = (600, 400), legend = :topright)
+    plot!(size = (600, 300), legend = :topright)
 end
 savefig("outputs/soc_opt_15.pdf")
 
