@@ -2,6 +2,7 @@ using ForwardDiff
 using Roots
 using StatsBase
 using Plots
+using Measures
 
 include("helper_functions.jl")
 
@@ -39,7 +40,7 @@ begin
     he_response_probs = first.(he_probability_tuples)
 	he_response_qrobs = last.(he_probability_tuples)
 
-    plot(title = "Traffic at each server for varying λ1 for λ2 = $(dp_string(λ2, 3))",
+    plot(title = "Traffic at each server for varying α, λ = 1, and λ2 = $(dp_string(λ2, 3S))",
         legend = :outerright,
         size = (800, 600))
     plot!(iter, response_probs, label = "p⋆", lc = :blue, lw = 1.2)
@@ -48,4 +49,5 @@ begin
     plot!(iter, he_response_qrobs, label = "he_q⋆", ls = :dash, lc = :red, lw = 1.2)
     plot!(ylims = (0,1), xlims = (0,1.76))
     plot!(xlabel = "α", ylabel = "probability")
+    plot!(margin = 2mm)
 end
