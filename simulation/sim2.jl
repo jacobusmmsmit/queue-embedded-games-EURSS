@@ -99,6 +99,7 @@ function run_simulation(arrival_rates, job_size, private_service_rate, public_se
 end
 
 df_events_simple, gby = run_simulation(arrival_rates, job_size, private_service_rate, public_service_rate, p1_prob_public, p2_prob_public)
+gby2 = gby
 gby = DataFrame(gby)
 dfs = vcat(gby, df_events_simple, cols=:union)
 
@@ -107,7 +108,11 @@ label_dict = Dict(-1 => "Total", 0 => "Public", 1 => "Player 1 Private", 2 => "P
 translate(x) = colour_dict[x]
 dfs[:, :groupcolour] = translate.(dfs[!, :group])
 
+<<<<<<< HEAD
+function plot_path(df, end_time)
+=======
 function plot_path(df)
+>>>>>>> 45c358024690d11027869bba7b14f6298db72bdd
     p = plot(title = "Simulation of a queue", xlabel = "Time", ylabel = "Queue length")
     @inbounds for i in 1:(size(df)[1] - 1)
         plot!(p,
@@ -150,7 +155,62 @@ function plot_path(df)
             label = false
         )
     end
+    xlims!(p, (0, end_time))
         return p
 end
 
-p = plot_path(dfs)
+p = plot_path(dfs, total_time)
+
+
+
+ARs = 0.1:0.025:2
+AR_JS_ratio = 1.5
+JSs = ARs ./ AR_JS_ratio
+
+res = DataFrame(player = Int64[], public = Bool[], JS = Float64[], mean_response_time = Float64[])
+resval = Float64[]
+for (AR, JS) in zip(ARs, JSs)
+    temp = Float64[]
+    for i in 1:50
+        # println("AR: ", AR, ", JS: ", JS)
+        _, gby = run_simulation(
+            AR,
+            JS,
+            private_service_rate,
+            public_service_rate,
+            p1_prob_public,
+            p2_prob_public
+        )
+        gby = DataFrame(gby)
+        sort!(gby, [:player, :public, :time])
+
+        arrivals = subset(gby, :event => ByRow(isequal(1)))
+        services = subset(gby, :event => ByRow(isequal(-1))) |>
+            x -> select(x, [:time]) |>
+            x -> rename(x, :time => :dep_time)
+
+        gby = hcat(arrivals, services) |>
+            x -> select(x, [:player, :public, :time, :dep_time]) |>
+            x -> groupby(x, [:player, :public]) |>
+            x -> combine(x, [:time, :dep_time] => ((x, y) -> (mean(y - x))) => :mean_response_time) |>
+            x -> combine(x, :mean_response_time => mean)[1, 1]
+        append!(temp, gby)
+    end
+    append!(resval, mean(temp))
+end
+# Note just change mean to var(y - x) to see for that too
+plot(ARs, resval, xlabel = "Arrival Rate", ylabel = "Mean Response Time", yaxis = :log10, legend = :none)
+
+sort!(gby, [:player, :public, :time])
+
+arrivals = subset(gby, :event => ByRow(isequal(1)))
+services = subset(gby, :event => ByRow(isequal(-1))) |>
+    x -> select(x, [:time]) |>
+    x -> rename(x, :time => :dep_time)
+
+hcat(arrivals, services) |>
+    x -> select(x, [:player, :public, :time, :dep_time]) |>
+    x -> groupby(x, [:player, :public]) |>
+    x -> combine(x, [:time, :dep_time] => ((x, y) -> (mean(y - x))) => :mean_response_time) |>
+    x -> combine(x, :mean_response_time => mean)[1, 1]
+

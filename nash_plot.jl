@@ -23,11 +23,10 @@ end
 
 asymptotes = find_asymptotes(costs, iter)
 
-nash_plot = plot(iter[costs .> 0], costs[costs .> 0], label = "Player 1 Cost")
+nash_plot = plot(iter[costs .> 0], costs[costs .> 0], label = "Response Time")
 plot!(ylims = (0, 25), xlims = (0, 1), size = (600, 250), palette = :tab10)
 plot!([p, p], [0, cost(p, q, parameters...)], ls = :dash, lc = :black, label = "Minimum")
 plot!([0, p], [cost(p, q, parameters...), cost(p, q, parameters...)], ls = :dash, lc = :black, label = "")
 vline!([asymptotes], ls = :dash, label = "Asymptotes")
-plot!(xlabel = "Player 1 probability", ylabel = "Cost", legend = :topleft, margin = 2.5mm)
-savefig("outputs/nash_plot.pdf")
-
+plot!(xlabel = "Proportion Sent to Public Server", ylabel = "Expected Response Time", legend = :topleft, margin = 2.5mm)
+savefig("outputs/nash_plot_poster.pdf")
