@@ -112,34 +112,38 @@ function simulate_queue(
         p1_prob_public = p1_prob_public
         p2_prob_public = p2_prob_public
     end
-    return event_data, interval_data
+    return event_data[1:end-1, :], interval_data
 end
 
+
 begin
-begin
-    total_simulation_length = 1000
-    interval_length = 10
-    p1_arrival_rate = 1
-    p2_arrival_rate = 1
+    total_simulation_length = 100000
+    interval_length = total_simulation_length/10
+    job_size = 25
+    p1_arrival_rate = 1/job_size
+    p2_arrival_rate = 1/job_size
     private_service_rate = 1/1.5
     public_service_rate = 1/0.7
     breakin = 3
 end
-
+begin
 event_data, interval_data = simulate_queue(
     total_simulation_length,
     interval_length,
     Exponential(1/p1_arrival_rate),
     Exponential(1/p2_arrival_rate),
-    Exponential(1/public_service_rate),
-    Exponential(1/private_service_rate),
+    Exponential(job_size/public_service_rate),
+    Exponential(job_size/private_service_rate),
     0.5,
     0.5,
 )
 
-begin
-    transform!(event_data, :eventtype => ByRow(x -> split(x, "_")) => [:source, :event])
-    select!(event_data, Not(:eventtype))
+
+transform!(event_data, :eventtype => ByRow(x -> split(x, "_")) => [:source, :event])
+select!(event_data, Not(:eventtype))
+
+function prepare_event_data_for_plot(event_data::DataFrame, colours::AbstractVector = [:red, :orange, :blue, :green])
+    @assert length(colours) == 4
     arr_dept_to_effect(x) = x == "arrival" ? 1 : -1
     event_plot_data = copy(event_data)
     event_plot_data[:, :effect] = arr_dept_to_effect.(event_plot_data[:, :event])
@@ -151,67 +155,69 @@ begin
     )
     event_plot_data = transform!(event_plot_data, :effect_cumsum => Base.Fix2(lag, -1) => :next_effect_cumsum, ungroup = true)
 
-    colour_dict = Dict("p1-private" => :red, "p1-public" => :orange, "p2-private" => :blue, "p2-public" => :green)
+    colour_dict = Dict("p1-private" => colours[1], "p1-public" => colours[2], "p2-private" => colours[3], "p2-public" => colours[4])
     translate(x) = colour_dict[x]
     event_plot_data[:, :groupcolour] = translate.(event_plot_data[!, :source])
+    return event_plot_data
 end
 
-event_lineplot_data = event_plot_data[:, [:time, :source, :effect_cumsum, :groupcolour]]
-
-p = plot()
-for g in groupby(event_lineplot_data, :source)
-    plot!(p, g.time, g.effect_cumsum, colour = first(g.groupcolour), label = first(g.source))
+function plot_event_data(plottable_event_data::DataFrame)
+    p = plot()
+    for g in groupby(plottable_event_data, :source)
+        plot!(p, g.time, g.effect_cumsum, colour = first(g.groupcolour), label = first(g.source))
+    end
+    return p
 end
-p
 
+# plot_event_data(prepare_event_data_for_plot(event_data))
 
-# function plot_path(df)
-#     p = plot(title = "Simulation of a queue", xlabel = "Time", ylabel = "Queue length")
-#     @inbounds for row in eachrow(df)
-#         plot!(p,
-#             [row.time, row.changetime],
-#             [row.effect_cumsum, row.effect_cumsum],
-#             colour = row.groupcolour,
-#             label = false
-#         )
-#         plot!(p,
-#             [row.changetime, row.changetime],
-#             [row.effect_cumsum, row.next_effect_cumsum],
-#             colour = row.groupcolour,
-#             label = false)
-#     end
-#     firstlinesdf = combine(groupby(df, :source)) do sdf
-#         sdf[argmin(skipmissing(sdf.time)), :]
-#     end
-#     @inbounds for row in eachrow(firstlinesdf)
-#         plot!(p,
-#             [0, row.time],
-#             [0, 0],
-#             colour = row.groupcolour,
-#             label = row.source
-#         )
-#     end
+function plot_path(df)
+    p = plot(title = "Simulation of a queue", xlabel = "Time", ylabel = "Queue length")
+    @inbounds for row in eachrow(df)
+        plot!(p,
+            [row.time, row.changetime],
+            [row.effect_cumsum, row.effect_cumsum],
+            colour = row.groupcolour,
+            label = false
+        )
+        plot!(p,
+            [row.changetime, row.changetime],
+            [row.effect_cumsum, row.next_effect_cumsum],
+            colour = row.groupcolour,
+            label = false)
+    end
+    firstlinesdf = combine(groupby(df, :source)) do sdf
+        sdf[argmin(skipmissing(sdf.time)), :]
+    end
+    @inbounds for row in eachrow(firstlinesdf)
+        plot!(p,
+            [0, row.time],
+            [0, 0],
+            colour = row.groupcolour,
+            label = row.source
+        )
+    end
 
-#     tempdf = transform(df[:, [:time, :effect]], :effect => cumsum, :time => Base.Fix2(lag, -1) => :changetime)
-#     transform!(tempdf, :effect_cumsum => Base.Fix2(lag, -1) => :next_effect_cumsum)
-#     @inbounds for row in eachrow(tempdf)
-#         plot!(p,
-#             [row.time, row.changetime],
-#             [row.effect_cumsum, row.effect_cumsum],
-#             colour = :black,
-#             label = false
-#         )
-#         plot!(p,
-#             [row.changetime, row.changetime],
-#             [row.effect_cumsum, row.next_effect_cumsum],
-#             colour = :black,
-#             label = false,
-#             legend = :topleft)
-#     end
-#     return p
-# end
+    tempdf = transform(df[:, [:time, :effect]], :effect => cumsum, :time => Base.Fix2(lag, -1) => :changetime)
+    transform!(tempdf, :effect_cumsum => Base.Fix2(lag, -1) => :next_effect_cumsum)
+    @inbounds for row in eachrow(tempdf)
+        plot!(p,
+            [row.time, row.changetime],
+            [row.effect_cumsum, row.effect_cumsum],
+            colour = :black,
+            label = false
+        )
+        plot!(p,
+            [row.changetime, row.changetime],
+            [row.effect_cumsum, row.next_effect_cumsum],
+            colour = :black,
+            label = false,
+            legend = :topleft)
+    end
+    return p
+end
 
-# p = plot_path(event_data)
+# p = plot_path(prepare_event_data_for_plot(event_data))
 
 # savefig(p, "outputs/simulated_queue_plot.pdf")
 
@@ -275,4 +281,12 @@ begin
     p2
 end
 p2 
+
+println(median(skipmissing(event_data_wide.response_time)))
+histogram(log10.(collect(skipmissing(event_data_wide.response_time))),
+    nbins = 50,
+    label = false,
+    xlabel = "log10(Response Time)",
+    ylabel = "Frequency",
+    title = "Histogram of Response Times")
 end
