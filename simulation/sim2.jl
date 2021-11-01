@@ -15,7 +15,7 @@ begin
     p1_prob_public = 0.6
     p2_prob_public = 0.6
 
-    total_time = 100
+    segment_time = 100
 end
 
 function run_simulation(arrival_rates, job_size, private_service_rate, public_service_rate, p1_prob_public, p2_prob_public)
@@ -29,7 +29,7 @@ function run_simulation(arrival_rates, job_size, private_service_rate, public_se
         return interarrival_times
     end
 
-    job_interarrival_times = generate_interarrival_times(Exponential(1 / sum(arrival_rates)), total_time)
+    job_interarrival_times = generate_interarrival_times(Exponential(1 / sum(arrival_rates)), segment_time)
     total_jobs = length(job_interarrival_times)
     job_which_player = 1 .+ rand(Bernoulli(arrival_rates[1] / sum(arrival_rates)), total_jobs)
     df = DataFrame(order = 1:total_jobs, interarrival_times = job_interarrival_times, player = job_which_player)
@@ -108,7 +108,11 @@ label_dict = Dict(-1 => "Total", 0 => "Public", 1 => "Player 1 Private", 2 => "P
 translate(x) = colour_dict[x]
 dfs[:, :groupcolour] = translate.(dfs[!, :group])
 
+<<<<<<< HEAD
 function plot_path(df, end_time)
+=======
+function plot_path(df)
+>>>>>>> 45c358024690d11027869bba7b14f6298db72bdd
     p = plot(title = "Simulation of a queue", xlabel = "Time", ylabel = "Queue length")
     @inbounds for i in 1:(size(df)[1] - 1)
         plot!(p,
