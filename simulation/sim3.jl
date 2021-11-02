@@ -4,7 +4,7 @@ include("simulation_helpers.jl")
 include("../helper_functions.jl")
 
 begin
-    total_simulation_length = 1000
+    total_simulation_length = 100
     interval_length = total_simulation_length/10
     job_size = 0.8
     p1_arrival_rate = 1/1.9
@@ -73,8 +73,8 @@ histogram(log10.(collect(skipmissing(event_data_wide.response_time))),
 
 
 ARs = 0.1:0.1:2
-total_volume = 1
-JSs = total_volume ./ ARs
+total_volume = 2
+JSs = 1/2 * total_volume ./ ARs
 n_reps = 50
 dot_every = Int(floor(n_reps/5))
 
@@ -124,15 +124,15 @@ for (AR, JS) in zip(ARs, JSs)
 end
 end
 plot(ARs, JSs, xlabel = "Arrival Rate", ylabel = "Job Size")
-mean_plot = plot(JSs, mean_resval, xlabel = "Job Size", ylabel = "Mean Response Time", legend = :none)
-sd_plot = plot(JSs, sqrt.(var_resval), xlabel = "Job Size", ylabel = "SD Response Time", legend = :none)
+mean_plot = plot(JSs, mean_resval, xlabel = "Job Size", yaxis = :log10, ylabel = "Mean Response Time", legend = :none)
+sd_plot = plot(JSs, sqrt.(var_resval), xlabel = "Job Size", yaxis = :log10, ylabel = "SD Response Time", legend = :none)
 
 begin
     total_simulation_length = 10000
     interval_length = total_simulation_length/10
-    job_size = 10
-    p1_arrival_rate = 0.1
-    p2_arrival_rate = 0.1
+    job_size = 0.5
+    p1_arrival_rate = 2
+    p2_arrival_rate = 2
     private_service_rate = 1/(1.5*job_size)
     public_service_rate = 1/(0.7*job_size)
     breakin = 3
@@ -144,6 +144,7 @@ begin
         α -> 1 / (0.7 * (α)))
 end
 
+# to ensure correctness: calculate_distributions
 
 event_data, interval_data = simulate_queue(
     total_simulation_length,

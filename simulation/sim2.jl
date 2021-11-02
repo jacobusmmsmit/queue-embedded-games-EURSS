@@ -8,14 +8,15 @@ using ShiftedArrays
 Random.seed!(123)
 
 begin
-    arrival_rates = (1.5, 1.5)
-    job_size = 1
+    arrival_rates = (10, 10)
+    job_size = 0.1
     private_service_rate(job_size) = 1 / (1.5 * job_size)
     public_service_rate(job_size) = 1 / (0.7 * job_size)
-    p1_prob_public = 0.6
-    p2_prob_public = 0.6
+    p1_prob_public = 0.57
+    p2_prob_public = 0.57
 
     segment_time = 100
+    total_time = 100
 end
 
 function run_simulation(arrival_rates, job_size, private_service_rate, public_service_rate, p1_prob_public, p2_prob_public)
@@ -155,20 +156,20 @@ function plot_path(df, end_time)
         return p
 end
 
-p = plot_path(dfs, total_time)
+p2 = plot_path(dfs, total_time)
 
 
 
-ARs = 0.1:0.025:2
-AR_JS_ratio = 1.5
-JSs = ARs ./ AR_JS_ratio
+JSs = 0.1:0.025:2
+AR_JS_ratio = 1
+ARs = AR_JS_ratio ./ JSs 
 
 res = DataFrame(player = Int64[], public = Bool[], JS = Float64[], mean_response_time = Float64[])
 resval = Float64[]
 for (AR, JS) in zip(ARs, JSs)
     temp = Float64[]
     for i in 1:50
-        # println("AR: ", AR, ", JS: ", JS)
+        println("AR: ", AR, ", JS: ", JS)
         _, gby = run_simulation(
             AR,
             JS,
@@ -195,18 +196,18 @@ for (AR, JS) in zip(ARs, JSs)
     append!(resval, mean(temp))
 end
 # Note just change mean to var(y - x) to see for that too
-plot(ARs, resval, xlabel = "Arrival Rate", ylabel = "Mean Response Time", yaxis = :log10, legend = :none)
+plot(JSs, resval, xlabel = "Job Size", ylabel = "Mean Response Time", legend = :none)
 
-sort!(gby, [:player, :public, :time])
+# sort!(gby, [:player, :public, :time])
 
-arrivals = subset(gby, :event => ByRow(isequal(1)))
-services = subset(gby, :event => ByRow(isequal(-1))) |>
-    x -> select(x, [:time]) |>
-    x -> rename(x, :time => :dep_time)
+# arrivals = subset(gby, :event => ByRow(isequal(1)))
+# services = subset(gby, :event => ByRow(isequal(-1))) |>
+#     x -> select(x, [:time]) |>
+#     x -> rename(x, :time => :dep_time)
 
-hcat(arrivals, services) |>
-    x -> select(x, [:player, :public, :time, :dep_time]) |>
-    x -> groupby(x, [:player, :public]) |>
-    x -> combine(x, [:time, :dep_time] => ((x, y) -> (mean(y - x))) => :mean_response_time) |>
-    x -> combine(x, :mean_response_time => mean)[1, 1]
+# hcat(arrivals, services) |>
+#     x -> select(x, [:player, :public, :time, :dep_time]) |>
+#     x -> groupby(x, [:player, :public]) |>
+#     x -> combine(x, [:time, :dep_time] => ((x, y) -> (mean(y - x))) => :mean_response_time) |>
+#     x -> combine(x, :mean_response_time => mean)[1, 1]
 
