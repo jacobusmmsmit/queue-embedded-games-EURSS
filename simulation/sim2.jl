@@ -108,11 +108,7 @@ label_dict = Dict(-1 => "Total", 0 => "Public", 1 => "Player 1 Private", 2 => "P
 translate(x) = colour_dict[x]
 dfs[:, :groupcolour] = translate.(dfs[!, :group])
 
-<<<<<<< HEAD
 function plot_path(df, end_time)
-=======
-function plot_path(df)
->>>>>>> 45c358024690d11027869bba7b14f6298db72bdd
     p = plot(title = "Simulation of a queue", xlabel = "Time", ylabel = "Queue length")
     @inbounds for i in 1:(size(df)[1] - 1)
         plot!(p,
