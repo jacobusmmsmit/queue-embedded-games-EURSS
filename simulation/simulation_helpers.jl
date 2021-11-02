@@ -14,105 +14,138 @@ function simulate_queue(
     service_dist_priv::Distribution,
     p1_prob_public::Real,
     p2_prob_public::Real,)
-now = 0.0
-p1_next_arrival = rand(p1_arrival_dist)
-p2_next_arrival = rand(p2_arrival_dist)
-p1_priv_next_departure = Inf
-p2_priv_next_departure = Inf
-public_next_departure = Inf
-events = [
-p1_next_arrival,
-p2_next_arrival,
-p1_priv_next_departure,
-p2_priv_next_departure,
-public_next_departure,
-]
-p1_queue = Float64[]
-p2_queue = Float64[]
-public_queue = Float64[]
-public_queue_who = Int8[]
-event_data = DataFrame(time = Union{Float64, Missing}[], eventtype = String[])
-interval_data = DataFrame(interval = Int[], p1_pp = Float64[], p2_pp = Float64[])
-interval = 1
-while now < until
-push!(interval_data, [interval, p1_prob_public, p2_prob_public])
-while now < interval_length * (interval)
-nextevent = argmin(events)
-#p1_next_arrival
-if nextevent == 1
-    now = p1_next_arrival
-    where_to = rand(Bernoulli(p1_prob_public))
-    if where_to == 1
-        if isempty(public_queue)
-            public_next_departure = p1_next_arrival + rand(service_dist_pub)
+    now = 0.0
+    p1_next_arrival = rand(p1_arrival_dist)
+    p2_next_arrival = rand(p2_arrival_dist)
+    p1_priv_next_departure = Inf
+    p2_priv_next_departure = Inf
+    public_next_departure = Inf
+    events = [
+        p1_next_arrival,
+        p2_next_arrival,
+        p1_priv_next_departure,
+        p2_priv_next_departure,
+        public_next_departure,
+    ]
+    p1_queue = Float64[]
+    p2_queue = Float64[]
+    public_queue = Float64[]
+    public_queue_who = Int8[]
+    event_data = DataFrame(time = Union{Float64,Missing}[], eventtype = String[])
+    interval_data = DataFrame(interval = Int[], p1_pp = Float64[], p2_pp = Float64[])
+    interval = 1
+    while now < until
+        push!(interval_data, [interval, p1_prob_public, p2_prob_public])
+        while now < interval_length * (interval)
+            nextevent = argmin(events)
+    # p1_next_arrival
+            if nextevent == 1
+                now = p1_next_arrival
+                where_to = rand(Bernoulli(p1_prob_public))
+                if where_to == 1
+                    if isempty(public_queue)
+                        public_next_departure = p1_next_arrival + rand(service_dist_pub)
+                    end
+                    push!(public_queue, p1_next_arrival)
+                    push!(public_queue_who, 1)
+                    push!(event_data, [now "p1-public_arrival"])
+                else
+                    if isempty(p1_queue)
+                        p1_priv_next_departure = p1_next_arrival + rand(service_dist_priv)
+                    end
+                    push!(p1_queue, p1_next_arrival)
+                    push!(event_data, [now "p1-private_arrival"])
+                end
+                p1_next_arrival += rand(p1_arrival_dist)
+
+    # p2_next_arrival
+            elseif nextevent == 2
+                now = p2_next_arrival
+                where_to = rand(Bernoulli(p2_prob_public))
+                if where_to == 1
+                    if isempty(public_queue)
+                        public_next_departure = p2_next_arrival + rand(service_dist_pub)
+                    end
+                    push!(public_queue, p2_next_arrival)
+                    push!(public_queue_who, 2)
+                    push!(event_data, [now "p2-public_arrival"])
+                else
+                    if isempty(p2_queue)
+                        p2_priv_next_departure = p2_next_arrival + rand(service_dist_priv)
+                    end
+                    push!(p2_queue, p2_next_arrival)
+                    push!(event_data, [now "p2-private_arrival"])
+                end
+                p2_next_arrival += rand(p2_arrival_dist)
+
+                # p1_priv_next_departure
+                elseif nextevent == 3
+                    now = p1_priv_next_departure
+                    push!(event_data, [now "p1-private_departure"])
+                    popfirst!(p1_queue)
+                    p1_priv_next_departure += isempty(p1_queue) ? Inf : rand(service_dist_priv)
+
+                # p2_priv_next_departure
+                elseif nextevent == 4
+                    now = p2_priv_next_departure
+                    push!(event_data, [now "p2-private_departure"])
+                    popfirst!(p2_queue)
+                    p2_priv_next_departure += isempty(p2_queue) ? Inf : rand(service_dist_priv)
+
+                # public_next_departure
+                else
+                    now = public_next_departure
+                    push!(event_data, [now "p$(popfirst!(public_queue_who))-public_departure"])
+                    popfirst!(public_queue)
+                    public_next_departure += isempty(public_queue) ? Inf : rand(service_dist_pub)
+            end
+            events = [
+                p1_next_arrival,
+                p2_next_arrival,
+                p1_priv_next_departure,
+                p2_priv_next_departure,
+                public_next_departure,
+            ]
         end
-        push!(public_queue, p1_next_arrival)
-        push!(public_queue_who, 1)
-        push!(event_data, [now "p1-public_arrival"])
-    else
-        if isempty(p1_queue)
-            p1_priv_next_departure = p1_next_arrival + rand(service_dist_priv)
-        end
-        push!(p1_queue, p1_next_arrival)
-        push!(event_data, [now "p1-private_arrival"])
+        interval += 1
+    # choose new probabilities (i.e. strategies) here
+        # p1_prob_public = p1_prob_public
+        # p2_prob_public = p2_prob_public
     end
-    p1_next_arrival += rand(p1_arrival_dist)
-
-#p2_next_arrival
-elseif nextevent == 2
-    now = p2_next_arrival
-    where_to = rand(Bernoulli(p2_prob_public))
-    if where_to == 1
-        if isempty(public_queue)
-            public_next_departure = p2_next_arrival + rand(service_dist_pub)
-        end
-        push!(public_queue, p2_next_arrival)
-        push!(public_queue_who, 2)
-        push!(event_data, [now "p2-public_arrival"])
-    else
-        if isempty(p2_queue)
-            p2_priv_next_departure = p2_next_arrival + rand(service_dist_priv)
-        end
-        push!(p2_queue, p2_next_arrival)
-        push!(event_data, [now "p2-private_arrival"])
-    end
-    p2_next_arrival += rand(p2_arrival_dist)
-
-#p1_priv_next_departure
-elseif nextevent == 3
-    now = p1_priv_next_departure
-    push!(event_data, [now "p1-private_departure"])
-    popfirst!(p1_queue)
-    p1_priv_next_departure += isempty(p1_queue) ? Inf : rand(service_dist_priv)
-
-#p2_priv_next_departure
-elseif nextevent == 4
-    now = p2_priv_next_departure
-    push!(event_data, [now "p2-private_departure"])
-    popfirst!(p2_queue)
-    p2_priv_next_departure += isempty(p2_queue) ? Inf : rand(service_dist_priv)
-
-#public_next_departure
-else
-    now = public_next_departure
-    push!(event_data, [now "p$(popfirst!(public_queue_who))-public_departure"])
-    popfirst!(public_queue)
-    public_next_departure += isempty(public_queue) ? Inf : rand(service_dist_pub)
+    return event_data[1:end - 1, :], interval_data
 end
-events = [
-    p1_next_arrival,
-    p2_next_arrival,
-    p1_priv_next_departure,
-    p2_priv_next_departure,
-    public_next_departure,
-]
-end
-interval += 1
-# choose new probabilities (i.e. strategies) here
-p1_prob_public = p1_prob_public
-p2_prob_public = p2_prob_public
-end
-return event_data[1:end-1, :], interval_data
+
+"""
+simulate_queue
+
+Alternative version where you input only numbers
+"""
+function simulate_queue(sim_length::Real,
+                        int_length::Real,
+                        p1_AR::Real,
+                        p2_AR::Real,
+                        pu_SR::Real,
+                        pr_SR::Real,
+                        js::Real,)
+    processing_rate(base_rate, job_size) = base_rate * (1 / job_size)
+    pst, qst = equilibrium_probability(
+        p1_AR,
+        p2_AR,
+        js,
+        α -> processing_rate(pr_SR, α),
+        α -> processing_rate(pu_SR, α)
+    )
+    
+    simulate_queue(
+        sim_length,
+        int_length,
+        Exponential(1 / p1_AR),
+        Exponential(1 / p2_AR),
+        Exponential(processing_rate(pu_SR, js)),
+        Exponential(processing_rate(pr_SR, js)),
+        pst,
+        qst
+    )    
 end
 
 function prepare_event_data_for_plot(event_data::DataFrame, colours::AbstractVector = [:red, :orange, :blue, :green])
@@ -223,5 +256,5 @@ function evaluate_cost(df)
     public_wait_time = df[1, :mean_response_time]
     player = df[1, :player]
     p = first(df[1, Regex("$(player)")])
-    p*public_wait_time + (1-p)*private_wait_time
+    p * public_wait_time + (1 - p) * private_wait_time
 end

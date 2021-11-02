@@ -8,15 +8,15 @@ using ShiftedArrays
 Random.seed!(123)
 
 begin
-    arrival_rates = (10, 10)
-    job_size = 0.1
+    arrival_rates = (0.1, 0.1)
+    job_size = 10
     private_service_rate(job_size) = 1 / (1.5 * job_size)
     public_service_rate(job_size) = 1 / (0.7 * job_size)
-    p1_prob_public = 0.57
-    p2_prob_public = 0.57
+    p1_prob_public = 0.576
+    p2_prob_public = 0.576
 
-    segment_time = 100
-    total_time = 100
+    segment_time = 10000
+    total_time = 10000
 end
 
 function run_simulation(arrival_rates, job_size, private_service_rate, public_service_rate, p1_prob_public, p2_prob_public)
@@ -156,20 +156,29 @@ function plot_path(df, end_time)
         return p
 end
 
-p2 = plot_path(dfs, total_time)
+# p2 = plot_path(dfs, total_time)
 
+@df dfs plot(
+    :time,
+    :cumevent,
+    group = :groupcolour
+)
 
-
-JSs = 0.1:0.025:2
+begin
+JSs = 10:10:100
 AR_JS_ratio = 1
 ARs = AR_JS_ratio ./ JSs 
 
-res = DataFrame(player = Int64[], public = Bool[], JS = Float64[], mean_response_time = Float64[])
-resval = Float64[]
+# res = DataFrame(player = Int64[], public = Bool[], JS = Float64[], mean_response_time = Float64[])
+resval_mean = Float64[]
+resval_var = Float64[]
 for (AR, JS) in zip(ARs, JSs)
-    temp = Float64[]
-    for i in 1:50
-        println("AR: ", AR, ", JS: ", JS)
+    temp_mean = Float64[]
+    temp_var = Float64[]
+    print("AR: ", round(AR, digits = 4), ", JS: ", round(JS, digits = 4))
+    num_repetitions = JS * 1000
+    for i in 1:num_repetitions
+        if mod(i, floor(num_repetitions / 5)) == 0 print(".") end
         _, gby = run_simulation(
             AR,
             JS,
@@ -189,15 +198,49 @@ for (AR, JS) in zip(ARs, JSs)
         gby = hcat(arrivals, services) |>
             x -> select(x, [:player, :public, :time, :dep_time]) |>
             x -> groupby(x, [:player, :public]) |>
-            x -> combine(x, [:time, :dep_time] => ((x, y) -> (mean(y - x))) => :mean_response_time) |>
-            x -> combine(x, :mean_response_time => mean)[1, 1]
-        append!(temp, gby)
+            x -> transform(x, [:time, :dep_time] => ((x, y) -> (y - x)) => :response_time) |>
+            x -> combine(x, :response_time => (x -> (mean_RT = mean(skipmissing(x)), sd_RT = var(skipmissing(x)))) => AsTable)
+        append!(temp_mean, gby[1, 1])
+        append!(temp_var, gby[1, 2])
     end
-    append!(resval, mean(temp))
+    println()
+    append!(resval_mean, mean(temp_mean))
+    append!(resval_var, mean(temp_var))
 end
-# Note just change mean to var(y - x) to see for that too
-plot(JSs, resval, xlabel = "Job Size", ylabel = "Mean Response Time", legend = :none)
+end
 
+    ### Mean and Variance of Response Time Plots ###
+begin
+plot_mean = plot(JSs, resval_mean, xlabel = "Job Size", ylabel = "Mean Response Time", label = "Empirical Mean")
+plot!(JSs,
+    cost.(0.57, 0.57, ARs, ARs, JSs, private_service_rate, public_service_rate),
+    title = "Mean Response Time by Job Size",
+    xlabel = "Job Size",
+    ylabel = "Mean Response Time",
+    label = "Theoretical Mean",
+    size = [400, 300],
+    legend = :topleft)
+
+plot_variance = plot(JSs, resval_var, xlabel = "Job Size", ylabel = "Variance of Response Time", label = "Empirical Variance")
+plot!(JSs,
+variance_of_cost.(0.57, 0.57, ARs, ARs, JSs, private_service_rate, public_service_rate),
+    title = "Variance by Job Size",
+    xlabel = "Job Size",
+    ylabel = "Variance of Response Time",
+    label = "Theoretical Variance",
+    size = [400, 300],
+    legend = :topleft)
+
+plot(plot_mean, plot_variance, size = [800, 300], margin = 12pt)
+end
+
+savefig("outputs/simulated_variance.pdf")
+
+plot(JSs, resval_mean ./ cost.(0.57, 0.57, ARs, ARs, JSs, private_service_rate, public_service_rate))
+plot(JSs, resval_var ./ variance_of_cost.(0.57, 0.57, ARs, ARs, JSs, private_service_rate, public_service_rate))
+
+total_cost(0.57, 0.57, 1, 1, 1, private_service_rate, public_service_rate)
+total_cost(0.57, 0.57, 2, 2, 0.5, private_service_rate, public_service_rate)
 # sort!(gby, [:player, :public, :time])
 
 # arrivals = subset(gby, :event => ByRow(isequal(1)))

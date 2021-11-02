@@ -4,7 +4,7 @@ using StatsBase
 using Plots
 
 function private_cost(p, λ1, α, μ)
-    1 / (μ(α) - λ1 + λ1 * p)
+    1 / (μ(α) - λ1 + (λ1 * p))
 end
 
 private_cost(p, q, λ1, λ2, α, μ, ν) = private_cost(p, λ1, α, μ)
