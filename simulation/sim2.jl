@@ -179,7 +179,7 @@ for (AR, JS) in zip(ARs, JSs)
     temp_mean = Float64[]
     temp_var = Float64[]
     print("AR: ", round(AR, digits = 4), ", JS: ", round(JS, digits = 4))
-    num_repetitions = JS * 1000
+    num_repetitions = JS * 10
     for i in 1:num_repetitions
         if mod(i, floor(num_repetitions / 5)) == 0 print(".") end
         _, gby = run_simulation(
@@ -222,10 +222,10 @@ end
 Hyperexponential(parameters, weights) = MixtureModel(Exponential, parameters, weights)
 RTDist(p, q, λ1, λ2, α, μ, ν) = Hyperexponential([(1/(ν(α) - λ1*p - λ2*q)), (1/(μ(α) - λ1*(1-p)))], [p, 1 - p])
 RT = RTDist(0.57, 0.57, 1, 1, 1, private_service_rate, public_service_rate)
-
+RTs = RTDist.(0.57, 0.57, ARs, ARs, JSs, private_service_rate, public_service_rate)
 plot_mean = plot(JSs, resval_mean, xlabel = "Job Size", ylabel = "Mean Response Time", label = "Empirical Mean")
 plot!(JSs,
-    mean.(RTDist.(0.57, 0.57, ARs, ARs, JSs, private_service_rate, public_service_rate)),
+    mean.(RTs),
     title = "Mean Response Time by Job Size",
     xlabel = "Job Size",
     ylabel = "Mean Response Time",
@@ -235,7 +235,7 @@ plot!(JSs,
 
 plot_variance = plot(JSs, resval_var, xlabel = "Job Size", ylabel = "Variance of Response Time", label = "Empirical Variance")
 plot!(JSs,
-    var.(RTDist.(0.57, 0.57, ARs, ARs, JSs, private_service_rate, public_service_rate)),
+    var.(RTs),
     title = "Variance by Job Size",
     xlabel = "Job Size",
     ylabel = "Variance of Response Time",
@@ -243,10 +243,10 @@ plot!(JSs,
     size = [400, 300],
     legend = :topleft)
 
-plot(plot_mean, plot_variance, size = [800, 300], margin = 12pt)
+mean_var_plot = plot(plot_mean, plot_variance, size = [800, 300], margin = 12pt)
 end
 
-# savefig("outputs/simulated_variance.pdf")
+savefig("outputs/simulated_variance.pdf")
 
 plot(JSs, resval_mean ./ cost.(0.57, 0.57, ARs, ARs, JSs, private_service_rate, public_service_rate))
 plot(JSs, resval_var ./ variance_of_cost.(0.57, 0.57, ARs, ARs, JSs, private_service_rate, public_service_rate))
@@ -294,12 +294,19 @@ sim_df = run_simulation(
 # cost(0.57, 0.57, 1, 1, 1, private_service_rate, public_service_rate)
 
 
-density(log10.(rand(RT, 1000000)), lw = 5, label = "Theoretical Response Time Distribution")
-density!(log10.(sim_df.response_time), lw = 5, label = "Empirical Response Time Distribution")
-plot!(xlims = [-3, 2], legend = :topleft)
+density_plot = density(log.(rand(RT, 1000000)), lw = 4, label = "Theoretical Response Distribution")
+density!(log.(sim_df.response_time), lw = 4, label = "Empirical Response Distribution")
+plot!(xlims = [-6, 4], legend = :topleft, size = (500, 300),
+    xlabel = "log(x)",
+    ylabel = "f(x)",
+    title = "Comparison of Densities")
+
+# savefig("outputs/densities.pdf")
 
 mean(RT)
 mean(sim_df.response_time)
 var(RT)
 var(sim_df.response_time)
+
+
 
