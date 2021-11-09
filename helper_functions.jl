@@ -388,3 +388,21 @@ function he_equilibrium_probability(λ1, λ2, α, μ, ν, β)
     q = he_qstar(p, λ1, λ2, α, μ, ν, β)
     return (p, q)
 end
+
+"""
+    poa(λ1, λ2, α, μ, ν)
+Calculates the Price of Anarchy (ratio of worst equilibrium cost to best
+possible cost), returns Inf if infeasible
+"""
+function poa(λ1, λ2, α, μ, ν)
+    parameters = (λ1, λ2, α, μ, ν)
+    he_parameters = (λ1, λ2, α, μ, ν, 1)
+    tc_he = total_cost(he_equilibrium_probability(he_parameters...)..., parameters...)
+    tc = total_cost(equilibrium_probability(parameters...)..., parameters...)
+    ca(x, y) = calculate_assumptions(
+        equilibrium_probability(x, y, α, μ, ν)...,
+        x, y, α, μ, ν;
+        which = "both"
+    )
+    return all(ca(λ1, λ2)) ? tc/tc_he : Inf
+end
