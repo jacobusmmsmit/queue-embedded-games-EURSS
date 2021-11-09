@@ -4,6 +4,7 @@ using Distributions
 using StatsPlots
 using DataFrames
 using ShiftedArrays
+using Measures
 
 Random.seed!(123)
 
@@ -14,12 +15,11 @@ begin
     public_service_rate(job_size) = 1 / (0.7 * job_size)
     p1_prob_public = 0.576
     p2_prob_public = 0.576
-
     segment_time = 10000
     total_time = 10000
 end
 
-function run_simulation(arrival_rates, job_size, private_service_rate, public_service_rate, p1_prob_public, p2_prob_public)
+function run_simulation(arrival_rates, job_size, private_service_rate, public_service_rate, p1_prob_public, p2_prob_public; total_time = 1000, return_ft = false)
     function generate_interarrival_times(d::Distribution, time)
         interarrival_times = [rand(d)]
             # initial_n = time/mean(d)
@@ -30,7 +30,7 @@ function run_simulation(arrival_rates, job_size, private_service_rate, public_se
         return interarrival_times
     end
 
-    job_interarrival_times = generate_interarrival_times(Exponential(1 / sum(arrival_rates)), segment_time)
+    job_interarrival_times = generate_interarrival_times(Exponential(1 / sum(arrival_rates)), total_time)
     total_jobs = length(job_interarrival_times)
     job_which_player = 1 .+ rand(Bernoulli(arrival_rates[1] / sum(arrival_rates)), total_jobs)
     df = DataFrame(order = 1:total_jobs, interarrival_times = job_interarrival_times, player = job_which_player)
@@ -78,6 +78,9 @@ function run_simulation(arrival_rates, job_size, private_service_rate, public_se
         return vcat(arrivaltimes_df, servicetimes_df)
     end
 
+    if return_ft
+        return select(df, [:player, :public, :arrival_time, :service_duration, :finished_time])
+    end
 
     df_events = sort(make_events(df), :time)
     df_events_simple = select(df_events, [:time, :event])
@@ -165,7 +168,7 @@ end
 )
 
 begin
-JSs = 10:10:100
+JSs = 0.1:0.1:1
 AR_JS_ratio = 1
 ARs = AR_JS_ratio ./ JSs 
 
@@ -176,7 +179,7 @@ for (AR, JS) in zip(ARs, JSs)
     temp_mean = Float64[]
     temp_var = Float64[]
     print("AR: ", round(AR, digits = 4), ", JS: ", round(JS, digits = 4))
-    num_repetitions = JS * 1000
+    num_repetitions = JS * 10
     for i in 1:num_repetitions
         if mod(i, floor(num_repetitions / 5)) == 0 print(".") end
         _, gby = run_simulation(
@@ -185,7 +188,8 @@ for (AR, JS) in zip(ARs, JSs)
             private_service_rate,
             public_service_rate,
             p1_prob_public,
-            p2_prob_public
+            p2_prob_public,
+            total_time = 10000
         )
         gby = DataFrame(gby)
         sort!(gby, [:player, :public, :time])
@@ -208,12 +212,20 @@ for (AR, JS) in zip(ARs, JSs)
     append!(resval_var, mean(temp_var))
 end
 end
-
-    ### Mean and Variance of Response Time Plots ###
+### Mean and Variance of Response Time Plots ###
 begin
+include("../helper_functions.jl")
+function variance_of_cost(p, q, λ1, λ2, α, μ, ν)
+    (p * public_cost(p, q, λ1, λ2, α, μ, ν))^2 + ((1 - p) * private_cost(p, λ1, α, μ))^2
+end
+
+Hyperexponential(parameters, weights) = MixtureModel(Exponential, parameters, weights)
+RTDist(p, q, λ1, λ2, α, μ, ν) = Hyperexponential([(1/(ν(α) - λ1*p - λ2*q)), (1/(μ(α) - λ1*(1-p)))], [p, 1 - p])
+RT = RTDist(0.57, 0.57, 1, 1, 1, private_service_rate, public_service_rate)
+RTs = RTDist.(0.57, 0.57, ARs, ARs, JSs, private_service_rate, public_service_rate)
 plot_mean = plot(JSs, resval_mean, xlabel = "Job Size", ylabel = "Mean Response Time", label = "Empirical Mean")
 plot!(JSs,
-    cost.(0.57, 0.57, ARs, ARs, JSs, private_service_rate, public_service_rate),
+    mean.(RTs),
     title = "Mean Response Time by Job Size",
     xlabel = "Job Size",
     ylabel = "Mean Response Time",
@@ -223,7 +235,7 @@ plot!(JSs,
 
 plot_variance = plot(JSs, resval_var, xlabel = "Job Size", ylabel = "Variance of Response Time", label = "Empirical Variance")
 plot!(JSs,
-variance_of_cost.(0.57, 0.57, ARs, ARs, JSs, private_service_rate, public_service_rate),
+    var.(RTs),
     title = "Variance by Job Size",
     xlabel = "Job Size",
     ylabel = "Variance of Response Time",
@@ -231,7 +243,7 @@ variance_of_cost.(0.57, 0.57, ARs, ARs, JSs, private_service_rate, public_servic
     size = [400, 300],
     legend = :topleft)
 
-plot(plot_mean, plot_variance, size = [800, 300], margin = 12pt)
+mean_var_plot = plot(plot_mean, plot_variance, size = [800, 300], margin = 12pt)
 end
 
 savefig("outputs/simulated_variance.pdf")
@@ -239,8 +251,8 @@ savefig("outputs/simulated_variance.pdf")
 plot(JSs, resval_mean ./ cost.(0.57, 0.57, ARs, ARs, JSs, private_service_rate, public_service_rate))
 plot(JSs, resval_var ./ variance_of_cost.(0.57, 0.57, ARs, ARs, JSs, private_service_rate, public_service_rate))
 
-total_cost(0.57, 0.57, 1, 1, 1, private_service_rate, public_service_rate)
-total_cost(0.57, 0.57, 2, 2, 0.5, private_service_rate, public_service_rate)
+cost(0.57, 0.57, 1, 1, 1, private_service_rate, public_service_rate)
+cost(0.57, 0.57, 2, 2, 0.5, private_service_rate, public_service_rate)
 # sort!(gby, [:player, :public, :time])
 
 # arrivals = subset(gby, :event => ByRow(isequal(1)))
@@ -253,4 +265,48 @@ total_cost(0.57, 0.57, 2, 2, 0.5, private_service_rate, public_service_rate)
 #     x -> groupby(x, [:player, :public]) |>
 #     x -> combine(x, [:time, :dep_time] => ((x, y) -> (mean(y - x))) => :mean_response_time) |>
 #     x -> combine(x, :mean_response_time => mean)[1, 1]
+
+C = 1
+αs = 0.1:0.01:5
+plot(αs, ForwardDiff.derivative.(α -> cost(0.57, 0.57, C/α, C/α, α, private_service_rate, public_service_rate), αs))
+
+sim_df = run_simulation(
+            1,
+            1,
+            private_service_rate,
+            public_service_rate,
+            p1_prob_public,
+            p2_prob_public;
+            total_time = 100000,
+            return_ft = true
+) |>
+    x -> transform(x, [:finished_time, :arrival_time] => (-) => "response_time")
+
+
+# function generate_response_times(N, p, q, λ1, λ2, α, μ, ν)
+#     pub = rand(Exponential(1/(ν(α) - λ1*p - λ2*q)), N)
+#     pr = rand(Exponential(1/(μ(α) - λ1*(1-p))), N)
+#     @. (p * pub) + ((1-p) * pr)
+# end
+
+
+# histogram(generate_response_times(100000, 0.57, 0.57, 1, 1, 1, private_service_rate, public_service_rate))
+# cost(0.57, 0.57, 1, 1, 1, private_service_rate, public_service_rate)
+
+
+density_plot = density(log.(rand(RT, 1000000)), lw = 4, label = "Theoretical Response Distribution")
+density!(log.(sim_df.response_time), lw = 4, label = "Empirical Response Distribution")
+plot!(xlims = [-6, 4], legend = :topleft, size = (500, 300),
+    xlabel = "log(x)",
+    ylabel = "f(x)",
+    title = "Comparison of Densities")
+
+# savefig("outputs/densities.pdf")
+
+mean(RT)
+mean(sim_df.response_time)
+var(RT)
+var(sim_df.response_time)
+
+
 

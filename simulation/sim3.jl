@@ -64,7 +64,8 @@ end
 p2 
 end
 
-    println(median(skipmissing(event_data_wide.response_time)))
+println(median(skipmissing(event_data_wide.response_time)))
+println(mean(skipmissing(event_data_wide.response_time)))
 histogram(log10.(collect(skipmissing(event_data_wide.response_time))),
     nbins = 50,
     label = false,
