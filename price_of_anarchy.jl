@@ -12,9 +12,9 @@ begin
     ν(α) = 1 / (0.7 * (α))
     parameters = (λ1, λ2, α, μ, ν)
     he_parameters = (λ1, λ2, α, μ, ν, β)
-    opponent_parameters = (λ2, λ1, α, μ, ν)
-    opponent_he_parameters = (λ2, λ1, α, μ, ν, β)
-    qs = 0:0.001:1
+    # opponent_parameters = (λ2, λ1, α, μ, ν)
+    # opponent_he_parameters = (λ2, λ1, α, μ, ν, β)
+    # qs = 0:0.001:1
 end
 
 
